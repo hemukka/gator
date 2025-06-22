@@ -26,6 +26,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error opening database connection: %v", err)
 	}
+	defer db.Close()
 	dbQueries := database.New(db)
 
 	appState := &state{
@@ -37,9 +38,10 @@ func main() {
 		handlers: make(map[string]func(*state, command) error),
 	}
 	cmds.register("login", handlerLogin)
+	cmds.register("register", handlerRegister)
 
 	if len(os.Args) < 2 {
-		log.Fatal("arguments missing")
+		log.Fatal("arguments missing, usage: <command> [args...]")
 	}
 
 	cmd := command{
