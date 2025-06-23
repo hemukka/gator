@@ -30,13 +30,13 @@ func handlerAddFeed(s *state, cmd command) error {
 
 	feed, err := s.db.CreateFeed(context.Background(), feedParams)
 	if err != nil {
-		return fmt.Errorf("couldn't add new feed: %w", err)
+		return fmt.Errorf("couldn't create feed: %w", err)
 	}
 
-	fmt.Println("Feed added successfully:")
+	fmt.Println("Feed created successfully:")
 	printFeed(feed)
 
-	return nil
+	return followFeed(s, feed.Url)
 }
 
 func handlerListFeeds(s *state, cmd command) error {
@@ -50,7 +50,7 @@ func handlerListFeeds(s *state, cmd command) error {
 		return nil
 	}
 
-	fmt.Println("All added feeds:")
+	fmt.Println("All created feeds:")
 	for _, feed := range feeds {
 		fmt.Printf(" * %s\n", feed.Name)
 		fmt.Printf("   * URL:  %s\n", feed.Url)
