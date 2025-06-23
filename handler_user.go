@@ -53,6 +53,29 @@ func handlerRegister(s *state, cmd command) error {
 	return nil
 }
 
+func handlerListUsers(s *state, cmd command) error {
+	users, err := s.db.GetUsers(context.Background())
+	if err != nil {
+		return fmt.Errorf("couldn't get list of users: %w", err)
+	}
+
+	if len(users) == 0 {
+		fmt.Println("No users registered.")
+		return nil
+	}
+
+	fmt.Println("Registered users:")
+	for _, user := range users {
+		fmt.Print("* ", user.Name)
+		if user.Name == s.cfg.CurrentUserName {
+			fmt.Print(" (current)")
+		}
+		fmt.Print("\n")
+	}
+
+	return nil
+}
+
 func handlerReset(s *state, cmd command) error {
 	if err := s.db.DeleteUsers(context.Background()); err != nil {
 		return fmt.Errorf("couldn't reset users db: %w", err)
