@@ -66,7 +66,7 @@ func handlerListUsers(s *state, cmd command) error {
 
 	fmt.Println("Registered users:")
 	for _, user := range users {
-		fmt.Print("* ", user.Name)
+		fmt.Print(" * ", user.Name)
 		if user.Name == s.cfg.CurrentUserName {
 			fmt.Print(" (current)")
 		}
