@@ -9,14 +9,9 @@ import (
 	"github.com/hemukka/gator/internal/database"
 )
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.args) != 2 {
 		return fmt.Errorf("expects name and url as arguments, usage: %s <feed_name> <url>", cmd.name)
-	}
-
-	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("couldn't find user: %w", err)
 	}
 
 	feedParams := database.CreateFeedParams{
@@ -36,7 +31,7 @@ func handlerAddFeed(s *state, cmd command) error {
 	fmt.Println("Feed created successfully:")
 	printFeed(feed)
 
-	return followFeed(s, feed.Url)
+	return followFeed(s, feed.Url, user)
 }
 
 func handlerListFeeds(s *state, cmd command) error {

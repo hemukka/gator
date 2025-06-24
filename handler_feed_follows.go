@@ -9,20 +9,15 @@ import (
 	"github.com/hemukka/gator/internal/database"
 )
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, user database.User) error {
 	if len(cmd.args) != 1 {
 		return fmt.Errorf("expects url as arguments, usage: %s <feed_url>", cmd.name)
 	}
 
-	return followFeed(s, cmd.args[0])
+	return followFeed(s, cmd.args[0], user)
 }
 
-func followFeed(s *state, url string) error {
-	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("couldn't find user: %w", err)
-	}
-
+func followFeed(s *state, url string, user database.User) error {
 	feed, err := s.db.GetFeedByURL(context.Background(), url)
 	if err != nil {
 		return fmt.Errorf("couldn't find feed by url: %w", err)
@@ -48,10 +43,10 @@ func followFeed(s *state, url string) error {
 	return nil
 }
 
-func handlerListFeedFollows(s *state, cmd command) error {
-	feedFollows, err := s.db.GetFeedFollowsForUser(context.Background(), s.cfg.CurrentUserName)
+func handlerListFeedFollows(s *state, cmd command, user database.User) error {
+	feedFollows, err := s.db.GetFeedFollowsForUser(context.Background(), user.ID)
 	if err != nil {
-		return fmt.Errorf("couldn't find feed follows: %w", err)
+		return fmt.Errorf("couldn't get feed follows: %w", err)
 	}
 
 	if len(feedFollows) == 0 {
