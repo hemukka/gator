@@ -2,8 +2,14 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"log"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/hemukka/gator/internal/database"
+	"github.com/lib/pq"
 )
 
 func handlerAgg(s *state, cmd command) error {
@@ -48,10 +54,43 @@ func scrapeFeeds(s *state) error {
 		return fmt.Errorf("couldn't fetch feed: %w", err)
 	}
 
-	fmt.Printf("Items in %s feed:\n", fetchedFeed.Channel.Title)
+	fmt.Printf("\033[2K\rScraping feed: %s (%s)...", feed.Name, fetchedFeed.Channel.Title)
+
 	for _, item := range fetchedFeed.Channel.Item {
-		fmt.Printf(" * %s\n", item.Title)
+		publishedAt, err := time.Parse(time.RFC1123Z, item.PubDate)
+		if err != nil {
+			fmt.Println()
+			return fmt.Errorf("coudn't parse pupDate: %w", err)
+		}
+
+		_, err = s.db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now().UTC(),
+			UpdatedAt:   time.Now().UTC(),
+			Title:       newNullString(item.Title),
+			Url:         item.Link,
+			Description: newNullString(item.Description),
+			PublishedAt: publishedAt,
+			FeedID:      feed.ID,
+		})
+		if err != nil {
+			pqErr, ok := err.(*pq.Error)
+			if ok && pqErr.Code == pq.ErrorCode("23505") {
+				// fmt.Printf("\033[2K\r * post already exists: %s", item.Title)
+			} else {
+				log.Println("\nerror saving post: ", err)
+			}
+			continue
+		}
+		// fmt.Printf("\033[2K\r * post saved: %s", post.Title.String)
+
 	}
-	fmt.Println("***********************")
 	return nil
+}
+
+func newNullString(s string) sql.NullString {
+	if s == "" {
+		return sql.NullString{String: "", Valid: false}
+	}
+	return sql.NullString{String: s, Valid: true}
 }
