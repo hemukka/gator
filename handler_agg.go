@@ -33,7 +33,7 @@ func handlerAgg(s *state, cmd command) error {
 	ticker := time.NewTicker(timeBetweenReqs)
 	for ; ; <-ticker.C {
 		if err := scrapeFeeds(s); err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}
 
@@ -54,13 +54,14 @@ func scrapeFeeds(s *state) error {
 		return fmt.Errorf("couldn't fetch feed: %w", err)
 	}
 
-	fmt.Printf("\033[2K\rScraping feed: %s (%s)...", feed.Name, fetchedFeed.Channel.Title)
+	fmt.Printf("\033[2K\rScraping feed: %s (%s)... ", feed.Name, fetchedFeed.Channel.Title)
 
+	alreadySaved := 0
 	for _, item := range fetchedFeed.Channel.Item {
 		publishedAt, err := time.Parse(time.RFC1123Z, item.PubDate)
 		if err != nil {
 			fmt.Println()
-			return fmt.Errorf("coudn't parse pupDate: %w", err)
+			log.Println("coudn't parse pupDate: ", err)
 		}
 
 		_, err = s.db.CreatePost(context.Background(), database.CreatePostParams{
@@ -76,6 +77,7 @@ func scrapeFeeds(s *state) error {
 		if err != nil {
 			pqErr, ok := err.(*pq.Error)
 			if ok && pqErr.Code == pq.ErrorCode("23505") {
+				alreadySaved += 1
 				// fmt.Printf("\033[2K\r * post already exists: %s", item.Title)
 			} else {
 				log.Println("\nerror saving post: ", err)
@@ -83,8 +85,8 @@ func scrapeFeeds(s *state) error {
 			continue
 		}
 		// fmt.Printf("\033[2K\r * post saved: %s", post.Title.String)
-
 	}
+	fmt.Printf("%v new posts + %v already saved posts", len(fetchedFeed.Channel.Item)-alreadySaved, alreadySaved)
 	return nil
 }
 
